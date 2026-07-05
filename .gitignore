@@ -1,0 +1,29 @@
+# MATLAB 自动备份文件
+*.asv
+
+# MATLAB 图形文件
+*.fig
+*.jpg
+*.jpeg
+*.png
+*.bmp
+
+# MATLAB 数据文件
+*.mat
+*.mexw64
+*.mexw32
+*.mexa64
+
+# Simulink 缓存
+*.slxc
+*.sldd
+*.mldatx
+
+# 编译输出
+*.o
+*.obj
+*.mex*
+
+# 系统文件
+Thumbs.db
+.DS_Store
