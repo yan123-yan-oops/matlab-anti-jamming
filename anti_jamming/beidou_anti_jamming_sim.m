@@ -327,7 +327,7 @@ rx_pulse = signal_clean + jam_pulse;      % 含脉冲干扰
 %  ★ 注意：必须也乘上同频载波，因为 signal_clean 是 BPSK 调制信号
 %    如果直接用 baseband 码和 BPSK 信号做相关，结果≈0（载波平均掉了）
 %    这就是之前 Figure 3 空白的根本原因！
-local_code = interp1(chip_time, code_seq, t, 'nearest');
+	local_code = interp1(chip_time, code_seq, t, 'nearest', 'extrap');
 local_ref  = local_code .* carrier;  % 本地参考 = PRN码 × 同频载波
 
 % ── 计算相关峰 ──
