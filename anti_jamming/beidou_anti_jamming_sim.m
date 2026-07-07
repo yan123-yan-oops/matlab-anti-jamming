@@ -209,8 +209,13 @@ xlabel('同相 I'); ylabel('正交 Q');
 axis equal; grid on;
 xlim([-1.5, 1.5]); ylim([-1.5, 1.5]);
 
-sgtitle('北斗 B1I 信号特性分析 (Beidou B1I Signal Characteristics)', ...
-         'FontSize', 13, 'FontWeight', 'bold');
+% 兼容旧版 MATLAB（R2018a 以下无 sgtitle）
+if ~verLessThan('matlab', '9.4')  % R2018a = 9.4
+    sgtitle('北斗 B1I 信号特性分析 (Beidou B1I Signal Characteristics)', ...
+             'FontSize', 13, 'FontWeight', 'bold');
+else
+    suptitle('北斗 B1I 信号特性分析 (Beidou B1I Signal Characteristics)');
+end
 
 
 %% ============================================================
@@ -291,8 +296,12 @@ for jammer = {'CW', 'Wideband', 'Pulse'}
     plot_idx = plot_idx + 2;
 end
 
-sgtitle('三种压制式干扰信号 (Three Types of Jamming Signals)', ...
-        'FontSize', 13, 'FontWeight', 'bold');
+if ~verLessThan('matlab', '9.4')
+    sgtitle('三种压制式干扰信号 (Three Types of Jamming Signals)', ...
+            'FontSize', 13, 'FontWeight', 'bold');
+else
+    suptitle('三种压制式干扰信号 (Three Types of Jamming Signals)');
+end
 
 
 %% ============================================================
@@ -310,17 +319,21 @@ rx_cw    = signal_clean + jam_cw;         % 含窄带干扰
 rx_wb    = signal_clean + jam_wideband;   % 含宽带干扰
 rx_pulse = signal_clean + jam_pulse;      % 含脉冲干扰
 
-% ── 本地 PRN 码 (用于相关) ──
+% ── 本地 PRN 码参考 (用于相关) ──
 %  接收机本地生成相同的 PRN 码，上采样到采样率
+%  ★ 注意：必须也乘上同频载波，因为 signal_clean 是 BPSK 调制信号
+%    如果直接用 baseband 码和 BPSK 信号做相关，结果≈0（载波平均掉了）
+%    这就是之前 Figure 3 空白的根本原因！
 local_code = interp1(chip_time, code_seq, t, 'nearest');
+local_ref  = local_code .* carrier;  % 本地参考 = PRN码 × 同频载波
 
 % ── 计算相关峰 ──
 %  用 xcorr 计算接收信号与本地码的相关
 %  归一化到 [0,1] 范围方便对比
-[corr_clean, lags] = xcorr(signal_clean, local_code, 'normalized');
-corr_cw    = xcorr(rx_cw,    local_code, 'normalized');
-corr_wb    = xcorr(rx_wb,    local_code, 'normalized');
-corr_pulse = xcorr(rx_pulse, local_code, 'normalized');
+[corr_clean, lags] = xcorr(signal_clean, local_ref, 'normalized');
+corr_cw    = xcorr(rx_cw,    local_ref, 'normalized');
+corr_wb    = xcorr(rx_wb,    local_ref, 'normalized');
+corr_pulse = xcorr(rx_pulse, local_ref, 'normalized');
 
 lags_us = lags / Fs * 1e6;  % 转为微秒
 
@@ -369,8 +382,12 @@ title(sprintf('④ + 脉冲干扰  衰减 %.1f dB', atten_pulse));
 xlabel('时延 (μs)'); ylabel('归一化相关值');
 xlim([-20, 20]); grid on;
 
-sgtitle('干扰对 PRN 码相关峰的影响 (Impact of Jamming on Correlation Peak)', ...
-        'FontSize', 13, 'FontWeight', 'bold');
+if ~verLessThan('matlab', '9.4')
+    sgtitle('干扰对 PRN 码相关峰的影响 (Impact of Jamming on Correlation Peak)', ...
+            'FontSize', 13, 'FontWeight', 'bold');
+else
+    suptitle('干扰对 PRN 码相关峰的影响 (Impact of Jamming on Correlation Peak)');
+end
 
 
 %% ============================================================
@@ -426,7 +443,7 @@ for n = 1:n_samples
 end
 
 % 评估陷波效果
-corr_notch = xcorr(notch_out, local_code, 'normalized');
+corr_notch = xcorr(notch_out, local_ref, 'normalized');
 peak_notch = max(abs(corr_notch));
 atten_notch = 20*log10(peak_notch / peak_clean);
 cw_improvement = atten_notch - atten_cw;  % 改善量 (dB)
@@ -474,7 +491,7 @@ wb_excised = real(ifft(ifftshift(X_wb_excised), N_fft));
 wb_excised = wb_excised(1:n_samples);
 
 % 评估频域抑制效果
-corr_wb_excised = xcorr(wb_excised, local_code, 'normalized');
+corr_wb_excised = xcorr(wb_excised, local_ref, 'normalized');
 peak_wb_excised = max(abs(corr_wb_excised));
 atten_wb_excised = 20*log10(peak_wb_excised / peak_clean);
 wb_improvement = atten_wb_excised - atten_wb;
@@ -520,7 +537,7 @@ pulse_blanked = rx_pulse;
 pulse_blanked(blank_mask_smooth) = 0;
 
 % 评估脉冲消隐效果
-corr_blanked = xcorr(pulse_blanked, local_code, 'normalized');
+corr_blanked = xcorr(pulse_blanked, local_ref, 'normalized');
 peak_blanked = max(abs(corr_blanked));
 atten_blanked = 20*log10(peak_blanked / peak_clean);
 pulse_improvement = atten_blanked - atten_pulse;
@@ -603,8 +620,12 @@ title('相关峰恢复对比');
 xlabel('时延 (μs)'); ylabel('归一化相关');
 xlim([-20, 20]); grid on;
 
-sgtitle('三种抗干扰算法效果对比 (Anti-Jamming Algorithm Comparison)', ...
-        'FontSize', 13, 'FontWeight', 'bold');
+if ~verLessThan('matlab', '9.4')
+    sgtitle('三种抗干扰算法效果对比 (Anti-Jamming Algorithm Comparison)', ...
+            'FontSize', 13, 'FontWeight', 'bold');
+else
+    suptitle('三种抗干扰算法效果对比 (Anti-Jamming Algorithm Comparison)');
+end
 
 
 %% ============================================================
