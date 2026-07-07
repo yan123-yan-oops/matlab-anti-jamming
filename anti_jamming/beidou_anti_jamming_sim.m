@@ -135,7 +135,10 @@ code_seq = repmat(prn_chips, 1, num_periods);
 chip_time = (0:num_periods*code_len-1) / code_rate;
 
 % 将码片序列插值到采样时间轴
-code_signal = interp1(chip_time, code_seq, t, 'nearest');
+% 使用 'extrap' 确保边界值不返回 NaN
+% （t 的最后几个采样点可能略超出 chip_time 范围，
+%   不加 extrap 会导致 NaN → 全信号变 NaN → 信号功率=NaN）
+code_signal = interp1(chip_time, code_seq, t, 'nearest', 'extrap');
 % 使用 'nearest' 保持方波形（BPSK 是硬切换）
 
 % ── 2.3 BPSK 调制到中频 ──
